@@ -7,12 +7,18 @@ import plotly.express as px
 import plotly.graph_objects as go
 from tweets import *
 import streamlit.components.v1 as components
+import numpy as np
+
+import json  #  SEB ADDED
+from geojson_rewind import rewind  #  SEB ADDED
+import os 
 
 #create containers up here: act as subfolders for the page
 figure_select = st.beta_container()
 most_tweets = st.beta_container()
 date_select = st.beta_container()
 interactive = st.beta_container()
+uk_map = st.beta_container()
 NB_sentiment = st.beta_container()
 trial_features = st.beta_container()
 lda_features = st.beta_container()
@@ -51,6 +57,8 @@ image_dict = {'borisjohnson':'https://pbs.twimg.com/profile_images/1331215386633
 
 lkm = 'https://i.postimg.cc/HLgtg8vp/Screenshot-2021-06-07-at-12-14-55.png'
 
+
+#SELECT FIGURES ------------------------------------------------------------------------------------------------ 
 with figure_select:
     st.title('Choose political figures')
     chosen_figures = st.multiselect('Select the political figures', figures_list, default='borisjohnson')
@@ -70,15 +78,22 @@ with figure_select:
     #turn list to string then evaluate to variables to assign to the beta_columns
     for i in range(num_figures):
         locals()[','.join(func(num_figures))][i].image(image_dict.get(chosen_figures[i],lkm))
-    
 
+#SELECT FIGURES ------------------------------------------------------------------------------------------------    
+
+
+#DISPLAY TWEETS ------------------------------------------------------------------------------------------------ 
 with most_tweets:
     st.title('some bar charts for the most tweets about, likes and retweets of...')
     st.header('table or chart of percentage likes per negative tweet etc... will work better with numbers from hugging face')
     st.table(df[['tweet','popularity']].sample(5,random_state=3))
         # df[df['figure'] in chosen_figures]['tweet','popularity'].sample(5,random_state=0))
         # ['tweet','popularity']].sample(5,random_state=0))
+#DISPLAY TWEETS ------------------------------------------------------------------------------------------------ 
+
     
+    
+#DATE SELECT ------------------------------------------------------------------------------------------------ 
 with date_select:
     st.header('Choose the dates to filter from')
     
@@ -86,8 +101,11 @@ with date_select:
                                                               datetime.date(2021,1,10)])
     start = str(dates[0])
     finish = str(dates[1])
+#DATE SELECT ------------------------------------------------------------------------------------------------ 
+
     
-#PLOTLY MAP#------------------------------------------------      
+    
+#PLOTLY MAP#------------------------------------------------------------------------------------------------      
 with interactive:
     st.header('this is an interactive chart from plotly')
     
@@ -108,7 +126,77 @@ with interactive:
                       width = 1200, height = 500)
     
     st.write(fig)
-#PLOTLY MAP#------------------------------------------------      
+#PLOTLY MAP#------------------------------------------------------------------------------------------------ 
+
+
+
+#UK MAP ------------------------------------------------------------------------------------------------ 
+
+
+
+# importing map
+with uk_map:
+    # st.header('Map View of <INSERT FIGURE>')
+    geojson_path = 'geojson_full_extent_super_gen.geojson'
+    with open(geojson_path) as json_file:
+        uk_regions_json = json.load(json_file)
+        
+    # locations dictionary
+    location_dict = {}
+    for feature in uk_regions_json['features']:
+        location_dict[feature['properties']['nuts118nm']] = [feature['properties']['lat'],feature['properties']['long']]
+    # regions dictionary
+    region_id = {}
+    for feature in uk_regions_json['features']:
+        region_id[feature['properties']['nuts118nm']] = feature['properties']['nuts118cd']
+    st.markdown(region_id)
+    
+    # -------------------START OF DF IMPORT (TO BE REPLACED WTIH REAL DF)-------------
+    # load sample_df 
+    # csv_path = 'tweets_large_ammended.csv'
+    # df = pd.read_csv(csv_path, encoding='latin')
+    # df = df.copy()
+    # edit sample_df
+    geo_locations = list(region_id.keys())
+    test_df = df[df.figure=='pritipatel']
+    test_df = test_df[['date','geo','retweets_count','likes_count','popularity']]
+    temp_group = test_df.groupby('geo')
+    geo_concat=[]
+    
+    for geo in geo_locations:
+        df_ = temp_group.get_group(geo)
+        df_ = df_[(df_['date']>start) & (df_['date']<finish)]
+        df_ = df_.groupby('geo', as_index=False).agg({'popularity':'mean'})
+        geo_concat.append(df_)
+
+    geo_data = pd.concat(geo_concat,axis=0)
+    geo_data.geo = geo_data.geo.map(region_id)   
+        
+    #pidfspiasefjpifsd
+    
+    # sample_df = df.head(12)  # use only 4 rows
+    # sample_df = sample_df[['id', 'tweet', ]]  # select columns
+    # rows_0_4 = sample_df.iloc[0:12]  # select rows
+    
+    # sample_df['location'] = ['UKC', 'UKD', 'UKE', 
+    # 'UKF', 'UKG', 'UKH', 'UKI', 
+    # 'UKJ', 'UKK', 'UKL', 'UKM', 'UKN']  # set values for location
+    # dummy_sentiment = pd.DataFrame(np.random.uniform(low=0.00, high=1.00, size=(12,)), columns=['Score']) #  create fake sentiment
+    # sample_df['score'] = dummy_sentiment  # combine into single df
+    # sample_df.reset_index(drop=True, inplace=True)  # reset index
+# -------------------END OF DF IMPORT-----------------------------------------
+# plot results
+    counties_corrected = rewind(uk_regions_json,rfc7946=False)
+    fig = px.choropleth(geo_data, geojson=counties_corrected, locations='geo', featureidkey="properties.nuts118cd", color='popularity',
+                                color_continuous_scale="PurPor", labels={'label name':'label name'}, title='MAP TITLE',
+                                scope="europe")
+    fig.update_geos(fitbounds="locations", visible=False)
+    fig.update_layout(width=800, height=800)
+    st.plotly_chart(fig)
+
+#UK MAP ------------------------------------------------------------------------------------------------ 
+
+
 
 with lda_features:
     st.header('LDA Model')
