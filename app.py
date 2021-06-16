@@ -13,9 +13,13 @@ import json  #  SEB ADDED
 from geojson_rewind import rewind  #  SEB ADDED
 import os 
 
+st.set_page_config(page_title='Le KingMakers', page_icon=None, layout='wide', initial_sidebar_state='auto')
+
+
 #create containers up here: act as subfolders for the page
 figure_select = st.beta_container()
 most_tweets = st.beta_container()
+get_random_tweet = st.beta_container()
 date_select = st.beta_container()
 interactive = st.beta_container()
 uk_map = st.beta_container()
@@ -27,9 +31,10 @@ lda_features = st.beta_container()
 #try to cache one of these to only run once
 tweets = Tweets()
 df = Tweets().get_data()
+df = df.iloc[:,1:].rename(columns={'scores':'popularity'})
 
 #pass this in as a hard-coded list at the end
-figures_list = ['borisjohnson', 'davidlammy', 'emilythornberry', 'keirstarmer',
+figures_list = ['borisjohnson', 'davidlammy', 'emilythornberry', 'keir_starmer',
        'matthancock', 'grantshapps', 'jonashworth', 'lisanandy',
        'pritipatel', 'rishisunak', 'angelarayner', 'dominicraab',
        'ed_miliband', 'jeremycorbyn', 'michaelgove']
@@ -42,7 +47,7 @@ figures_group = df.groupby('figure')
 image_dict = {'borisjohnson':'https://pbs.twimg.com/profile_images/1331215386633756675/NodbPVQv_400x400.jpg',
               'matthancock':'https://pbs.twimg.com/profile_images/1311368965160136704/ypBTtBpn_400x400.jpg',
               'jeremycorbyn':'https://pbs.twimg.com/profile_images/1351939685900288007/lcoCyR7S_400x400.jpg',
-              'keirstarmer':'https://pbs.twimg.com/profile_images/1323314457892790276/EfBgm41w_400x400.jpg',
+              'keir_starmer':'https://pbs.twimg.com/profile_images/1323314457892790276/EfBgm41w_400x400.jpg',
               'davidlammy':'https://pbs.twimg.com/profile_images/1334893581874716683/nI8J96l2_400x400.jpg',
               'pritipatel':'https://pbs.twimg.com/profile_images/1260148688334270465/ouBRXPoz_400x400.jpg',
               'grantshapps':'https://pbs.twimg.com/profile_images/1395400250941136898/O8hM9jG__400x400.jpg',
@@ -52,7 +57,7 @@ image_dict = {'borisjohnson':'https://pbs.twimg.com/profile_images/1331215386633
               'emilythornberry':'https://pbs.twimg.com/profile_images/1325943690456608774/JQqkdbFA_400x400.jpg',
               'jonashworth':'https://pbs.twimg.com/profile_images/1286568704751415297/eOv71dI3_400x400.jpg',
               'lisanandy':'https://pbs.twimg.com/profile_images/1242221937939689474/MqMEU5Ja_400x400.jpg',
-              'angelaraynor':'https://pbs.twimg.com/profile_images/1193214910475489281/pZJzUdpD_400x400.jpg',
+              'angelarayner':'https://pbs.twimg.com/profile_images/1193214910475489281/pZJzUdpD_400x400.jpg',
               'ed_miliband':'https://pbs.twimg.com/profile_images/859337943764410368/Jts3J7JI_400x400.jpg'}
 
 lkm = 'https://i.postimg.cc/HLgtg8vp/Screenshot-2021-06-07-at-12-14-55.png'
@@ -62,7 +67,6 @@ lkm = 'https://i.postimg.cc/HLgtg8vp/Screenshot-2021-06-07-at-12-14-55.png'
 with figure_select:
     st.title('Choose political figures')
     chosen_figures = st.multiselect('Select the political figures', figures_list, default='borisjohnson')
-    st.markdown(f"{chosen_figures} selected")
     
     num_figures = len(chosen_figures)
     
@@ -81,31 +85,42 @@ with figure_select:
 
 #SELECT FIGURES ------------------------------------------------------------------------------------------------    
 
+#Random_Tweet------------------------------------------------------------------------------------------------ 
+with get_random_tweet:
+    st.title('Tweet Fetcher')
+    pol = st.selectbox('Tweet about: ', options = figures_list)
+    if st.button('Get me a tweet'):
+        st.table(df.loc[(df['figure']==pol),['date','tweet','popularity']].sample(1,random_state=0))
+        
+
+#Random_Tweet------------------------------------------------------------------------------------------------
+
 
 #DISPLAY TWEETS ------------------------------------------------------------------------------------------------ 
 with most_tweets:
     st.title('some bar charts for the most tweets about, likes and retweets of...')
     st.header('table or chart of percentage likes per negative tweet etc... will work better with numbers from hugging face')
-    st.table(df[['tweet','popularity']].sample(5,random_state=3))
+    st.table(df[['tweet','popularity']].sample(5,random_state=0))
         # df[df['figure'] in chosen_figures]['tweet','popularity'].sample(5,random_state=0))
         # ['tweet','popularity']].sample(5,random_state=0))
 #DISPLAY TWEETS ------------------------------------------------------------------------------------------------ 
 
-    
+ 
+
     
 #DATE SELECT ------------------------------------------------------------------------------------------------ 
 with date_select:
-    st.header('Choose the dates to filter from')
+    st.title('Choose the dates to filter from')
     
     dates = st.date_input("Default start date is 1st Jan 2021", [datetime.date(2021, 1, 1), 
-                                                              datetime.date(2021,1,10)])
+                                                              datetime.date(2021,1,15)])
     start = str(dates[0])
     finish = str(dates[1])
 #DATE SELECT ------------------------------------------------------------------------------------------------ 
 
     
     
-#PLOTLY MAP#------------------------------------------------------------------------------------------------      
+#PLOTLY#------------------------------------------------------------------------------------------------      
 with interactive:
     st.header('this is an interactive chart from plotly')
     
@@ -113,7 +128,7 @@ with interactive:
     for figure in chosen_figures:
         df_ = figures_group.get_group(figure)
         df_ = df_[(df_['date']>start) & (df_['date']<finish)]
-        df_ = df_.groupby('date').agg({'popularity':'sum'})
+        df_ = df_.groupby('date').agg({'popularity':'mean'})
         df_['figure'] = figure
         concat_list.append(df_)
 
@@ -126,7 +141,7 @@ with interactive:
                       width = 1200, height = 500)
     
     st.write(fig)
-#PLOTLY MAP#------------------------------------------------------------------------------------------------ 
+#PLOTLY#------------------------------------------------------------------------------------------------ 
 
 
 
@@ -136,7 +151,12 @@ with interactive:
 
 # importing map
 with uk_map:
+    st.title('UK Sentiment Map')
+    # map_side, select_side = st.beta_columns(2)
     # st.header('Map View of <INSERT FIGURE>')
+    
+    map_politician = st.selectbox("choose politician", options = chosen_figures)
+    
     geojson_path = 'geojson_full_extent_super_gen.geojson'
     with open(geojson_path) as json_file:
         uk_regions_json = json.load(json_file)
@@ -149,18 +169,12 @@ with uk_map:
     region_id = {}
     for feature in uk_regions_json['features']:
         region_id[feature['properties']['nuts118nm']] = feature['properties']['nuts118cd']
-    st.markdown(region_id)
     
-    # -------------------START OF DF IMPORT (TO BE REPLACED WTIH REAL DF)-------------
-    # load sample_df 
-    # csv_path = 'tweets_large_ammended.csv'
-    # df = pd.read_csv(csv_path, encoding='latin')
-    # df = df.copy()
-    # edit sample_df
+
     geo_locations = list(region_id.keys())
-    test_df = df[df.figure=='pritipatel']
-    test_df = test_df[['date','geo','retweets_count','likes_count','popularity']]
-    temp_group = test_df.groupby('geo')
+    politician_df = df[df.figure==map_politician]
+    politician_df = politician_df[['date','geo','retweets_count','likes_count','popularity']]
+    temp_group = politician_df.groupby('geo')
     geo_concat=[]
     
     for geo in geo_locations:
@@ -172,23 +186,11 @@ with uk_map:
     geo_data = pd.concat(geo_concat,axis=0)
     geo_data.geo = geo_data.geo.map(region_id)   
         
-    #pidfspiasefjpifsd
-    
-    # sample_df = df.head(12)  # use only 4 rows
-    # sample_df = sample_df[['id', 'tweet', ]]  # select columns
-    # rows_0_4 = sample_df.iloc[0:12]  # select rows
-    
-    # sample_df['location'] = ['UKC', 'UKD', 'UKE', 
-    # 'UKF', 'UKG', 'UKH', 'UKI', 
-    # 'UKJ', 'UKK', 'UKL', 'UKM', 'UKN']  # set values for location
-    # dummy_sentiment = pd.DataFrame(np.random.uniform(low=0.00, high=1.00, size=(12,)), columns=['Score']) #  create fake sentiment
-    # sample_df['score'] = dummy_sentiment  # combine into single df
-    # sample_df.reset_index(drop=True, inplace=True)  # reset index
 # -------------------END OF DF IMPORT-----------------------------------------
 # plot results
     counties_corrected = rewind(uk_regions_json,rfc7946=False)
     fig = px.choropleth(geo_data, geojson=counties_corrected, locations='geo', featureidkey="properties.nuts118cd", color='popularity',
-                                color_continuous_scale="PurPor", labels={'label name':'label name'}, title='MAP TITLE',
+                                color_continuous_scale="RdYlGn", labels={'label name':'label name'}, title='MAP TITLE',
                                 scope="europe")
     fig.update_geos(fitbounds="locations", visible=False)
     fig.update_layout(width=800, height=800)
