@@ -162,6 +162,7 @@ with uk_map:
     test_df = test_df[['date','geo','retweets_count','likes_count','popularity']]
     temp_group = test_df.groupby('geo')
     geo_concat=[]
+    
     for geo in geo_locations:
         df_ = temp_group.get_group(geo)
         df_ = df_[(df_['date']>start) & (df_['date']<finish)]
@@ -171,6 +172,7 @@ with uk_map:
     geo_data = pd.concat(geo_concat,axis=0)
     geo_data.geo = geo_data.geo.map(region_id)   
         
+    #pidfspiasefjpifsd
     
     # sample_df = df.head(12)  # use only 4 rows
     # sample_df = sample_df[['id', 'tweet', ]]  # select columns
