@@ -7,7 +7,7 @@ class Tweets:
     '''
         
     def get_data(self):
-        return pd.read_csv('for_streamlit.csv')
+        return pd.read_csv('tweets_large_ammended.csv')
 
     #choose figure
     def by_figure(self, figure_twitter_handle, start = '2021-01-01', finish = '2021-06-01'):
