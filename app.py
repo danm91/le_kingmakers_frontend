@@ -108,7 +108,8 @@ if make_choice == 'Home Page':
         if st.button('Get me a tweet'):
             day_dt = datetime.datetime.date(day)
             st.table(df.loc[(df['figure']==pol) &(
-                df['date'] == str(day_dt)),['tweet','likes_count', 'retweets_count','popularity']].sample(1))
+                df['date'] == str(day_dt)),['tweet','likes_count',
+                                            'retweets_count','popularity']].sample(1))
                      
                     
 #Random_Tweet------------------------------------------------------------------------------------------------
@@ -137,8 +138,10 @@ if make_choice == 'Home Page':
     with date_select:
         st.title('Select dates to compare popularity')
         
-        dates = st.date_input("Default start date is 1st Jan 2021", [datetime.date(2021, 1, 1), 
-                                                                datetime.date(2021,6,10)])
+        dates = st.date_input("Data available between January - June 2021", 
+                              [datetime.date(2021, 1, 1), datetime.date(2021,6,10)],
+                              min_value = datetime.date(2021, 1, 1), 
+                              max_value = datetime.date(2021,6,10))
         start = str(dates[0])
         finish = str(dates[1])
 #DATE SELECT ------------------------------------------------------------------------------------------------ 
