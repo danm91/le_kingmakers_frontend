@@ -108,7 +108,8 @@ if make_choice == 'Home Page':
         if st.button('Get me a tweet'):
             day_dt = datetime.datetime.date(day)
             st.table(df.loc[(df['figure']==pol) &(
-                df['date'] == str(day_dt)),['tweet','likes_count', 'retweets_count','popularity']].sample(1))
+                df['date'] == str(day_dt)),['tweet','likes_count',
+                                            'retweets_count','popularity']].sample(1))
                      
                     
 #Random_Tweet------------------------------------------------------------------------------------------------
@@ -117,9 +118,18 @@ if make_choice == 'Home Page':
 #DISPLAY TWEETS ------------------------------------------------------------------------------------------------ 
     with tweet_table:
         # st.title('some bar charts for the most tweets about, likes and retweets of...')
+        def func(x):
+            if x in chosen_figures:
+                return 1
+            else:
+                return 0
+        
+        df['fig'] = df['figure'].map(func)
+        df2 = df[df['fig'] == 1]
+        
         st.title('What have people been saying?')
-        st.table(df[['tweet','popularity']].rename(columns = {'tweet':'Tweet',
-                                                            'popularity':'Popularity'}).sample(5,random_state=23))
+        st.table(df2[['tweet','popularity']].rename(columns = {'tweet':'Tweet',
+                                                            'popularity':'Popularity'}).sample(5))
 #DISPLAY TWEETS ------------------------------------------------------------------------------------------------ 
 
  
@@ -128,8 +138,10 @@ if make_choice == 'Home Page':
     with date_select:
         st.title('Select dates to compare popularity')
         
-        dates = st.date_input("Default start date is 1st Jan 2021", [datetime.date(2021, 1, 1), 
-                                                                datetime.date(2021,6,10)])
+        dates = st.date_input("Data available between January - June 2021", 
+                              [datetime.date(2021, 1, 1), datetime.date(2021,6,10)],
+                              min_value = datetime.date(2021, 1, 1), 
+                              max_value = datetime.date(2021,6,10))
         start = str(dates[0])
         finish = str(dates[1])
 #DATE SELECT ------------------------------------------------------------------------------------------------ 
@@ -278,7 +290,7 @@ if make_choice == 'Twitter Sentiment Evaluation':
             # st.markdown('okay')
             response = requests.get(gcp_scrape,params={'search': user_tweet})
             df_scrape = pd.read_json(response.json())
-            st.table(df_scrape[['time','tweet','scores']].sample(10))
+            st.table(df_scrape[['tweet','scores']].sample(10))
     
 # have a model for naive bayes
 # separate section for the hugging face
