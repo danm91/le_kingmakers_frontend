@@ -53,7 +53,7 @@ figures_group = df.groupby('figure')
 
 
 #Figure dict of urls for photos
-image_dict = {'borisjohnson':'https://pbs.twimg.com/profile_images/1331215386633756675/NodbPVQv_400x400.jpg',
+image_dict = {'borisjohnson':'https://pbs.twimg.com/profile_images/1414358967371935744/yAadRgF-_400x400.jpg',
               'matthancock':'https://pbs.twimg.com/profile_images/1311368965160136704/ypBTtBpn_400x400.jpg',
               'jeremycorbyn':'https://pbs.twimg.com/profile_images/1351939685900288007/lcoCyR7S_400x400.jpg',
               'keir_starmer':'https://pbs.twimg.com/profile_images/1323314457892790276/EfBgm41w_400x400.jpg',
